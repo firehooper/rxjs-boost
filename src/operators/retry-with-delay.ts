@@ -10,10 +10,12 @@ import { throwIf } from './throw-if';
  *              This also includes the first try.
  * @param count The number of times the operator will retry the execution.
  *              Defaults to `1`.
+ * @param retryPredecate The qualifier for if the error should be retried
  */
-export function retryWithDelay<T>(
+function retryWithDelay<T>(
   delay: number,
-  count = 1
+  count = 1,
+  retryPredecate: (error: any) => boolean = (error) => true,
 ): MonoTypeOperatorFunction<T> {
   return (input) =>
     input.pipe(
@@ -24,11 +26,11 @@ export function retryWithDelay<T>(
             error: undefined as any,
           }),
           throwIf(
-            (current) => current.count > count,
-            (current) => current.error
+            (current) => current.count > count || !retryPredecate(current.error),
+            (current) => current.error,
           ),
-          delayOperator(delay)
-        )
-      )
-    );
+          delayOperator(delay),
+        ),
+      ),
+    )
 }
